@@ -1,41 +1,64 @@
+package CourseSystem;
+
+import Account.User;
+import IOTextFile.IOTextFile;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
-public class CourseManager {
-    private final ArrayList<Course> courses;
+public class CourseManager implements Serializable {
+    public ArrayList<Course> courses;
+
+    public ArrayList<User> users;
+
+    public ArrayList<CourseUser> courseUsers;
+
+    public IOTextFile<Course> ioTextFile1 = new IOTextFile();
+    IOTextFile<User> ioTextFile = new IOTextFile();
+
+    IOTextFile<CourseUser> ioTextFile2 = new IOTextFile();
 
     public CourseManager() {
-        courses = new ArrayList<>();
+        courses = ioTextFile1.readFile("CaseStudy_Module2/src/File/Cart.txt");
+        courseUsers = ioTextFile2.readFile("CaseStudy_Module2/src/File/CartUser.txt");
+        users = ioTextFile.readFile("CaseStudy_Module2/src/File/UserAccount.txt");
     }
 
-    public void add(ArrayList<Category> categories,ArrayList<Name> names, Scanner scanner) {
+    public void add(ArrayList<Category> categories, Scanner scanner) {
         try {
-            Name name = getNameByIndex(names, scanner);
+            System.out.println("Enter name:");
+            String name = scanner.nextLine();
             System.out.println("Enter price: ");
             Double price = Double.parseDouble(scanner.nextLine());
             System.out.println("Enter quantity: ");
             Integer quantity = Integer.parseInt(scanner.nextLine());
             System.out.println("Enter category: ");
             Category category = getCategoryByIndex(categories, scanner);
-            courses.add(new Course(name, price, quantity, category));
-            writeFile();
+            for (User user : users) {
+                if (user.getRole1().getName_role().equals("USER")) {
+                    courses.add(new Course(name, price, quantity, category));
+                    ioTextFile1.writeFile(courses, "CaseStudy_Module2/src/File/Cart.txt");
+                } else {
+                    courseUsers.add(new CourseUser(name, price, quantity, category));
+                    ioTextFile2.writeFile(courseUsers, "CaseStudy_Module2/src/File/CartUser.txt");
+                }
+            }
         } catch (NumberFormatException | InputMismatchException e) {
             System.err.println(e.getMessage());
         }
     }
 
-    public void update(ArrayList<Category> categories,ArrayList<Name> names, Scanner scanner) {
+    public void update(ArrayList<Category> categories, Scanner scanner) {
         try {
             System.out.println("Enter the courseID you want to update: ");
             Long id = Long.parseLong(scanner.nextLine());
             Course courseUpdate;
             if ((courseUpdate = checkExist(id)) != null) {
                 System.out.println("Enter new name: ");
-                Name name;
-                if ((name = getNameByIndex(names, scanner)) != null) {
+                String name = scanner.nextLine();
+                if (!name.equals("")) {
                     courseUpdate.setName(name);
                 }
                 System.out.println("Enter new price: ");
@@ -53,7 +76,7 @@ public class CourseManager {
                 if ((category = getCategoryByIndex(categories, scanner)) != null) {
                     courseUpdate.setCategory(category);
                 }
-                writeFile();
+                ioTextFile1.writeFile(courses, "CaseStudy_Module2/src/File/Cart.txt");
             } else {
                 System.err.println("There are no course belong this ID");
             }
@@ -69,7 +92,7 @@ public class CourseManager {
             Course courseDelete;
             if ((courseDelete = checkExist(id)) != null) {
                 courses.remove(courseDelete);
-                writeFile();
+                ;
             } else {
                 System.err.println("There are no course belong this ID");
             }
@@ -79,11 +102,28 @@ public class CourseManager {
     }
 
     public void display() {
-        System.out.printf("%-10s%-35s%-15s%-20s%s", "ID", "Name", "Price", "Quantity", "Category\n");
+        System.out.printf("%-10s%-20s%-15s%-20s%s", "ID", "Name", "Price", "Quantity", "Category\n");
         for (Course course : courses) {
             course.display();
         }
     }
+
+    public void displayCartUser() {
+//        ioTextFile1.readFile("CaseStudy_Module2/src/File/Cart.txt");
+        System.out.printf("%-10s%-20s%-15s%-20s%s", "ID", "Name", "Price", "Quantity", "Category\n");
+        for (Course course : courses) {
+            course.display();
+        }
+    }
+
+    public void displayCartGuest() {
+//        ioTextFile1.readFile("CaseStudy_Module2/src/File/CartUser.txt");
+        System.out.printf("%-10s%-20s%-15s%-20s%s", "ID", "Name", "Price", "Quantity", "Category\n");
+        for (CourseUser c : courseUsers) {
+            c.display();
+        }
+    }
+
 
     public void displayById(Scanner scanner) {
         try {
@@ -114,24 +154,44 @@ public class CourseManager {
         }
     }
 
-    public void sumPriceBill() {
+    public void sumPriceBillGuest() {
+        System.out.printf("%-10s%-20s%-15s%-20s%s", "ID", "Name", "Price", "Quantity", "Category\n");
+        for (CourseUser c : courseUsers) {
+            c.display();
+        }
+        Double sum = 0.0;
+        for (CourseUser c : courseUsers) {
+            sum += c.getPrice();
+        }
+        System.out.println("---------------------------------------------------------------------------------");
+        System.out.printf("%-10s%-20s%-15s%-20s%s", "Total", "", sum, "", "");
+        System.out.println();
+    }
+
+    public void sumPriceBillUser() {
+        System.out.printf("%-10s%-20s%-15s%-20s%s", "ID", "Name", "Price", "Quantity", "Category\n");
+        for (Course course : courses) {
+            course.display();
+        }
         Double sum = 0.0;
         for (Course course : courses) {
             sum += course.getPrice();
         }
-        System.out.println("The total amount of the bill is :" + sum);
+        System.out.println("---------------------------------------------------------------------------------");
+        System.out.printf("%-10s%-20s%-15s%-20s%s", "Total", "", sum, "", "");
+        System.out.println();
     }
 
-//    public void displayCourseByNameContaining(Scanner scanner) {
-//        System.out.println("Enter character you want search: ");
-//        String search = scanner.nextLine();
-//        System.out.println("List course have name contains " + search + ": ");
-//        for (Course course : courses) {
-//            if (course.getName().contains(search)) {
-//                System.out.println(course);
-//            }
-//        }
-//    }
+    public void displayCourseByNameContaining(Scanner scanner) {
+        System.out.println("Enter character you want search: ");
+        String search = scanner.nextLine();
+        System.out.println("List course have name contains " + search + ": ");
+        for (Course course : courses) {
+            if (course.getName().contains(search)) {
+                System.out.println(course);
+            }
+        }
+    }
 
     private Category getCategoryByIndex(ArrayList<Category> categories, Scanner scanner) {
         for (int i = 0; i < categories.size(); i++) {
@@ -157,29 +217,6 @@ public class CourseManager {
         return null;
     }
 
-    private Name getNameByIndex(ArrayList<Name> names, Scanner scanner) {
-        for (int i = 0; i < names.size(); i++) {
-            System.out.println((i + 1) + ". " + names.get(i).getName());
-        }
-        System.out.println("0. No choice!");
-        int choice;
-        try {
-            do {
-                System.out.println("Enter your choice: ");
-                choice = Integer.parseInt(scanner.nextLine());
-                if (choice == 0) {
-                    return null;
-                }
-                if (choice > 0 && choice <= names.size()) {
-                    return names.get(choice - 1);
-                }
-                System.err.println("Please re-enter your selection!");
-            } while (choice < 0 && choice > names.size());
-        } catch (InputMismatchException | NumberFormatException e) {
-            System.err.println(e.getMessage());
-        }
-        return null;
-    }
 
     private Course checkExist(Long id) {
         for (Course course : courses) {
@@ -190,29 +227,43 @@ public class CourseManager {
         return null;
     }
 
-    public void writeFile() {
-        File file = new File("CaseStudy_Module2/src/course.txt");
-        try (ObjectOutputStream objectOutputStream
-                     = new ObjectOutputStream(new FileOutputStream(file))) {
-            objectOutputStream.writeObject(courses);
-        } catch (IOException e) {
-            System.err.println(e.getMessage());
+//    public void writeFile() {
+//        File file = new File("CaseStudy_Module2/src/File/course.txt");
+//        try {
+//            if (!file.exists()) {
+//                file.createNewFile();
+//            }
+//            ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(file));
+//            objectOutputStream.writeObject(courses);
+//            objectOutputStream.close();
+//        } catch (IOException e) {
+//            System.err.println(e.getMessage());
+//        }
+//    }
+//
+//    public void  readFile() {
+//        File file = new File("CaseStudy_Module2/src/File/course.txt");
+//        ArrayList<Course> courseArrayList = new ArrayList<>();
+//        try {
+//            ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(file));
+//            Object object;
+//            while ((object = objectInputStream.readObject()) != null) {
+//                courseArrayList = (ArrayList<Course>) object;
+//            }
+//        } catch (IOException | ClassNotFoundException e) {
+//            System.out.println(e.getMessage());
+//        }
+//        courses = courseArrayList;
+//    }
+
+    public void resetStaticIndex() {
+        if (!courses.isEmpty()) {
+            Course.INDEX = courses.get(courses.size() - 1).getId();
         }
     }
 
-    public ArrayList<Course> readFile() {
-        File file = new File("CaseStudy_Module2/src/course.txt");
-        ArrayList<Course> courseArrayList = new ArrayList<>();
-        try {
-            FileInputStream fileInputStream = new FileInputStream(file);
-            if (fileInputStream.available() > 0) {
-                ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-                courseArrayList = (ArrayList<Course>) objectInputStream.readObject();
-            }
-            return courseArrayList;
-        } catch (IOException | ClassNotFoundException e) {
-            System.err.println(e.getMessage());
-        }
-        return courseArrayList;
-    }
+
 }
+
+
+

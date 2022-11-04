@@ -1,7 +1,12 @@
-public class Name {
+package CourseSystem;
+
+import java.io.Serializable;
+
+public class Category implements Serializable {
     private String name;
 
-    public Name(String name) {
+
+    public Category(String name) {
         this.name = name;
     }
 
